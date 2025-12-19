@@ -13,6 +13,10 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import okhttp3.OkHttpClient
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import moletech.app.GreetingService
 import java.util.concurrent.Executors
 import kotlin.test.Test
@@ -47,6 +51,21 @@ class ZiplineTest {
                 val zipline = loadResult.zipline
                 val greetingService = zipline.take<GreetingService>("greetingService")
                 println(greetingService.greet("Junie"))
+
+                greetingService.callDouble({
+                    println("callDouble $it")
+                })
+
+                greetingService.waitCall { flow ->
+                    flow.emit(3)
+                    flow.emit(4)
+                }
+
+                val flow = greetingService.getPrintFlow()
+                flow.emit("kt:5")
+                flow.emit("kt:6")
+                flow.close()
+
                 zipline.close()
             }
             is LoadResult.Failure -> println("load failure: ${loadResult.exception}")
